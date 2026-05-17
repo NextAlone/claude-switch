@@ -6,7 +6,7 @@ import os
 import sys
 
 from claude_switch import __version__
-from claude_switch.config import load_providers, resolve_provider, USER_PROVIDERS_PATH
+from claude_switch.config import get_all_env_keys, load_providers, resolve_provider, USER_PROVIDERS_PATH
 from claude_switch.exceptions import ClaudeSwitchError
 from claude_switch.printer import accent, dimmed, error, warning
 from claude_switch.provider import resolve_env, format_exports
@@ -121,16 +121,21 @@ def cmd_provider_use(name: str, variant: str | None, mode: str | None) -> None:
     if mode == "eval":
         # stdout: export statements only (for eval capture)
         # stderr: human messages
-        print(format_exports(env_vars), file=sys.stdout)
+        known = get_all_env_keys(providers)
+        cleared = known - set(env_vars.keys())
+        lines = [f"export {k}=" for k in sorted(cleared)]
+        lines.append(format_exports(env_vars))
+        print("\n".join(lines), file=sys.stdout)
         variant_str = f" ({variant})" if variant else ""
         print(f"# claude-switch: using provider '{provider.name}'{variant_str}", file=sys.stderr)
         print(f"# Run: eval \"$(claude-switch provider use {name})\"", file=sys.stderr)
 
     elif mode == "global":
-        path = merge_into_user_settings(env_vars, source=provider.name)
+        known = get_all_env_keys(providers)
+        path = merge_into_user_settings(env_vars, source=provider.name, known_keys=known)
         print(f"Wrote {path} (provider: {accent(provider.name)})")
         # Unset env vars so settings.json takes effect
-        for key in env_vars:
+        for key in known:
             print(f"export {key}=")
 
     elif mode == "project":

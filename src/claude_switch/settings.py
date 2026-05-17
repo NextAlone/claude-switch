@@ -38,14 +38,25 @@ def write_user_settings(data: dict) -> None:
     path.chmod(0o600)
 
 
-def merge_into_user_settings(env_vars: dict[str, str], source: str | None = None) -> Path:
+def merge_into_user_settings(
+    env_vars: dict[str, str],
+    source: str | None = None,
+    known_keys: set[str] | None = None,
+) -> Path:
     """Merge provider env vars into ~/.claude/settings.json, preserving other keys.
+
+    If *known_keys* is provided, any key in *known_keys* that is NOT in *env_vars*
+    will be removed from the settings env (clearing stale vars from other providers).
 
     Returns the path written.
     """
     path = _user_settings_path()
     data = read_user_settings()
-    data.setdefault("env", {}).update(env_vars)
+    env = data.setdefault("env", {})
+    if known_keys:
+        for k in known_keys:
+            env.pop(k, None)
+    env.update(env_vars)
     if source:
         data["_claude_switch_provider"] = source
     write_user_settings(data)

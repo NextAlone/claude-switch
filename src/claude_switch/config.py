@@ -96,6 +96,17 @@ def load_providers() -> list[Provider]:
     return list(provider_map.values())
 
 
+def get_all_env_keys(providers: list[Provider]) -> set[str]:
+    """Collect all possible env var keys from all providers and their variants."""
+    keys: set[str] = set()
+    for p in providers:
+        keys.update(p.env.keys())
+        if p.variants:
+            for v_env in p.variants.values():
+                keys.update(v_env.keys())
+    return keys
+
+
 def resolve_provider(name: str, providers: list[Provider]) -> Provider:
     """Find a provider by name or alias. Raises ProviderNotFoundError."""
     for p in providers:
