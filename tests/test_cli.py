@@ -75,9 +75,9 @@ def test_completion_fish():
     out, err = _run_cli(["completion", "fish"])
     assert "complete -c claude-switch" in out
     assert "provider account status config completion" in out
-    assert "deepseek" in out
+    assert "claude-switch __complete providers" in out
+    assert "claude-switch __complete variants" in out
     assert "--mode" in out or "-l mode" in out
-    assert "china" in out
 
 
 def test_completion_zsh():
@@ -86,7 +86,8 @@ def test_completion_zsh():
     assert "#compdef claude-switch" in out
     assert "_claude_switch()" in out
     assert "--mode[Switching mode]" in out
-    assert "china" in out
+    assert "claude-switch __complete providers" in out
+    assert "claude-switch __complete variants" in out
 
 
 def test_completion_bash():
@@ -95,7 +96,21 @@ def test_completion_bash():
     assert "complete -F _claude_switch claude-switch" in out
     assert "_claude_switch()" in out
     assert "--mode) COMPREPLY" in out
-    assert "china" in out
+    assert "claude-switch __complete providers" in out
+    assert "claude-switch __complete variants" in out
+
+
+def test_internal_complete_user_providers():
+    """__complete providers returns user providers dynamically."""
+    out, err = _run_cli(["__complete", "providers"])
+    assert "deepseek" in out
+    assert "foxcode" in out
+
+
+def test_internal_complete_variants():
+    """__complete variants returns variants for the selected provider."""
+    out, err = _run_cli(["__complete", "variants", "foxcode"])
+    assert "codex" in out
 
 
 def test_account_list_empty(tmp_home):

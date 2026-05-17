@@ -111,16 +111,20 @@ def cmd_provider_remove(name: str) -> None:
     print(f"{accent('Removed')} provider '{name}' from {USER_PROVIDERS_PATH}")
 
 
-def _provider_names() -> list[str]:
-    return sorted({p.name for p in load_providers()})
+def _provider_names(include_builtin: bool = False) -> list[str]:
+    providers = load_providers()
+    if not include_builtin and USER_PROVIDERS_PATH.exists():
+        import tomllib
+        data = tomllib.loads(USER_PROVIDERS_PATH.read_text(encoding="utf-8"))
+        return sorted({p.get("name", "") for p in data.get("provider", []) if p.get("name")})
+    return sorted({p.name for p in providers})
 
 
-def _provider_variant_pairs() -> list[tuple[str, str]]:
-    pairs: list[tuple[str, str]] = []
+def _provider_variant_names(provider_name: str) -> list[str]:
     for p in load_providers():
-        if p.variants:
-            pairs.extend((p.name, v) for v in sorted(p.variants))
-    return pairs
+        if p.name == provider_name and p.variants:
+            return sorted(p.variants)
+    return []
 
 
 def _account_names() -> list[str]:
@@ -153,9 +157,6 @@ def _root_commands() -> list[str]:
 
 
 def _print_fish_completion() -> None:
-    providers = " ".join(_provider_names())
-    accounts = " ".join(_account_names())
-    variants = _provider_variant_pairs()
     print("complete -c claude-switch -f")
     print("complete -c claude-switch -n '__fish_use_subcommand' -a 'provider account status config completion'")
     print("complete -c claude-switch -n '__fish_seen_subcommand_from provider; and not __fish_seen_subcommand_from list add remove use' -a 'list add remove use'")
@@ -163,30 +164,24 @@ def _print_fish_completion() -> None:
     print("complete -c claude-switch -n '__fish_seen_subcommand_from provider; and __fish_seen_subcommand_from add' -l base-url")
     print("complete -c claude-switch -n '__fish_seen_subcommand_from provider; and __fish_seen_subcommand_from add' -l model")
     print("complete -c claude-switch -n '__fish_seen_subcommand_from provider; and __fish_seen_subcommand_from add' -l auth-token-var")
-    print(f"complete -c claude-switch -n '__fish_seen_subcommand_from provider; and __fish_seen_subcommand_from remove' -a '{providers}'")
-    print(f"complete -c claude-switch -n '__fish_seen_subcommand_from provider; and __fish_seen_subcommand_from use' -a '{providers}'")
-    for provider, variant in variants:
-        print(f"complete -c claude-switch -n '__fish_seen_subcommand_from provider; and __fish_seen_subcommand_from use; and __fish_seen_subcommand_from {provider}' -a '{variant}'")
+    print("complete -c claude-switch -n '__fish_seen_subcommand_from provider; and __fish_seen_subcommand_from remove' -a '(claude-switch __complete providers)'")
+    print("complete -c claude-switch -n '__fish_seen_subcommand_from provider; and __fish_seen_subcommand_from use' -a '(claude-switch __complete providers)'")
+    print("complete -c claude-switch -n '__fish_seen_subcommand_from provider; and __fish_seen_subcommand_from use' -a '(claude-switch __complete variants (commandline -opc)[4])'")
     print("complete -c claude-switch -n '__fish_seen_subcommand_from provider; and __fish_seen_subcommand_from use' -l mode -a 'eval global project'")
     print("complete -c claude-switch -n '__fish_seen_argument -l mode' -a 'eval global project'")
     print("complete -c claude-switch -n '__fish_seen_subcommand_from account; and not __fish_seen_subcommand_from list add switch remove' -a 'list add switch remove'")
-    print(f"complete -c claude-switch -n '__fish_seen_subcommand_from account; and __fish_seen_subcommand_from switch remove' -a '{accounts}'")
+    print("complete -c claude-switch -n '__fish_seen_subcommand_from account; and __fish_seen_subcommand_from switch remove' -a '(claude-switch __complete accounts)'")
     print("complete -c claude-switch -n '__fish_seen_subcommand_from config; and not __fish_seen_subcommand_from open show' -a 'open show'")
     print("complete -c claude-switch -n '__fish_seen_subcommand_from completion; and not __fish_seen_subcommand_from fish zsh bash' -a 'fish zsh bash'")
 
 
 def _print_zsh_completion() -> None:
-    providers = " ".join(_provider_names())
-    accounts = " ".join(_account_names())
-    variant_case = []
-    for provider, variant in _provider_variant_pairs():
-        variant_case.append(f"        {provider}) _values 'variant' {variant} ;;")
     print("#compdef claude-switch")
     print("_claude_switch() {")
-    print("  local -a commands providers accounts modes")
+    print("  local -a commands providers accounts modes variants")
     print("  commands=(provider account status config completion)")
-    print(f"  providers=({providers})")
-    print(f"  accounts=({accounts})")
+    print("  providers=(${(f)\"$(claude-switch __complete providers)\"})")
+    print("  accounts=(${(f)\"$(claude-switch __complete accounts)\"})")
     print("  modes=(eval global project)")
     print("  _arguments \\")
     print("    '--alias[Provider alias]:alias:' \\")
@@ -214,10 +209,8 @@ def _print_zsh_completion() -> None:
     print("      if [[ $words[2] == account && ( $words[3] == switch || $words[3] == remove ) ]]; then _describe 'account' accounts; fi ;;")
     print("    variant)")
     print("      if [[ $words[2] == provider && $words[3] == use ]]; then")
-    print("        case $words[4] in")
-    for line in variant_case:
-        print(line)
-    print("        esac")
+    print("        variants=(${(f)\"$(claude-switch __complete variants $words[4])\"})")
+    print("        _describe 'variant' variants")
     print("      fi ;;")
     print("  esac")
     print("}")
@@ -225,11 +218,6 @@ def _print_zsh_completion() -> None:
 
 
 def _print_bash_completion() -> None:
-    providers = " ".join(_provider_names())
-    accounts = " ".join(_account_names())
-    variant_cases = []
-    for provider, variant in _provider_variant_pairs():
-        variant_cases.append(f"        {provider}) COMPREPLY=( $(compgen -W '{variant}' -- \"$cur\") ) ;;")
     print("_claude_switch() {")
     print("  local cur prev words cword")
     print("  _init_completion || return")
@@ -247,20 +235,28 @@ def _print_bash_completion() -> None:
     print("        completion) COMPREPLY=( $(compgen -W 'fish zsh bash' -- \"$cur\") ) ;;")
     print("      esac ;;")
     print("    3)")
-    print(f"      [[ ${{words[1]}} == provider && ${{words[2]}} == use ]] && COMPREPLY=( $(compgen -W '{providers} --mode' -- \"$cur\") )")
-    print(f"      [[ ${{words[1]}} == provider && ${{words[2]}} == remove ]] && COMPREPLY=( $(compgen -W '{providers}' -- \"$cur\") )")
+    print("      [[ ${words[1]} == provider && ${words[2]} == use ]] && COMPREPLY=( $(compgen -W \"$(claude-switch __complete providers) --mode\" -- \"$cur\") )")
+    print("      [[ ${words[1]} == provider && ${words[2]} == remove ]] && COMPREPLY=( $(compgen -W \"$(claude-switch __complete providers)\" -- \"$cur\") )")
     print("      [[ ${words[1]} == provider && ${words[2]} == add ]] && COMPREPLY=( $(compgen -W '--alias --base-url --model --auth-token-var' -- \"$cur\") )")
-    print(f"      [[ ${{words[1]}} == account && ( ${{words[2]}} == switch || ${{words[2]}} == remove ) ]] && COMPREPLY=( $(compgen -W '{accounts}' -- \"$cur\") ) ;;")
+    print("      [[ ${words[1]} == account && ( ${words[2]} == switch || ${words[2]} == remove ) ]] && COMPREPLY=( $(compgen -W \"$(claude-switch __complete accounts)\" -- \"$cur\") ) ;;")
     print("    4)")
     print("      if [[ ${words[1]} == provider && ${words[2]} == use ]]; then")
-    print("        case ${words[3]} in")
-    for line in variant_cases:
-        print(line)
-    print("        esac")
+    print("        COMPREPLY=( $(compgen -W \"$(claude-switch __complete variants ${words[3]})\" -- \"$cur\") )")
     print("      fi ;;")
     print("  esac")
     print("}")
     print("complete -F _claude_switch claude-switch")
+
+
+def cmd_complete(kind: str, provider_name: str | None = None) -> None:
+    if kind == "providers":
+        print("\n".join(_provider_names()))
+    elif kind == "variants" and provider_name:
+        print("\n".join(_provider_variant_names(provider_name)))
+    elif kind == "accounts":
+        print("\n".join(_account_names()))
+    else:
+        raise ClaudeSwitchError(f"Unsupported completion kind '{kind}'")
 
 
 def cmd_completion(shell: str) -> None:
@@ -311,6 +307,11 @@ def main() -> None:
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
 
     sub = parser.add_subparsers(dest="command", title="commands")
+
+    # --- internal completion ---
+    p_internal = sub.add_parser("__complete", help=argparse.SUPPRESS)
+    p_internal.add_argument("kind", choices=["providers", "variants", "accounts"])
+    p_internal.add_argument("provider", nargs="?", default=None)
 
     # --- provider ---
     p_prov = sub.add_parser("provider", help="Manage API providers")
@@ -369,7 +370,9 @@ def main() -> None:
         sys.exit(1)
 
     try:
-        if args.command == "provider":
+        if args.command == "__complete":
+            cmd_complete(args.kind, args.provider)
+        elif args.command == "provider":
             if args.action == "list":
                 cmd_provider_list()
             elif args.action == "add":
