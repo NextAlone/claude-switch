@@ -73,7 +73,7 @@ def test_provider_use_unknown(monkeypatch):
 def test_account_list_empty(tmp_home):
     """account list with no accounts."""
     from unittest.mock import patch as up
-    with up("claude_switch.account.ACCOUNTS_DIR", tmp_home / ".claude_switch" / "accounts",
+    with up("claude_switch.account.ACCOUNTS_DIR", tmp_home / ".config" / "claude-switch" / "accounts",
             create=True):
         out, err = _run_cli(["account", "list"])
     assert "no saved accounts" in out.lower() or "no saved accounts" in err.lower()

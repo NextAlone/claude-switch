@@ -19,7 +19,11 @@ class Provider:
     variants: dict[str, dict[str, str]] | None = None  # variant_name -> env overrides
 
 
-USER_CONFIG_DIR = Path.home() / ".claude_switch"
+def _config_dir() -> Path:
+    return Path.home() / ".config" / "claude-switch"
+
+
+USER_CONFIG_DIR = _config_dir()
 USER_PROVIDERS_PATH = USER_CONFIG_DIR / "providers.toml"
 
 

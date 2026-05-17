@@ -12,7 +12,7 @@ from claude_switch.credential import (
 )
 from claude_switch.printer import accent, bolded, dimmed, error, warning
 
-ACCOUNTS_DIR = Path.home() / ".claude_switch" / "accounts"
+ACCOUNTS_DIR = Path.home() / ".config" / "claude-switch" / "accounts"
 SEQUENCE_FILE = ACCOUNTS_DIR / "sequence.json"
 
 

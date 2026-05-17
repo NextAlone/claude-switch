@@ -29,7 +29,7 @@ def tmp_claude_config(tmp_home):
 @pytest.fixture
 def tmp_providers_toml(tmp_home):
     """Create a temporary providers.toml with a test provider."""
-    cs_dir = tmp_home / ".claude_switch"
+    cs_dir = tmp_home / ".config" / "claude-switch"
     cs_dir.mkdir(parents=True)
     toml_path = cs_dir / "providers.toml"
     toml_path.write_text("""\
