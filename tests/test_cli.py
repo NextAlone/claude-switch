@@ -113,6 +113,13 @@ def test_internal_complete_variants():
     assert "codex" in out
 
 
+def test_internal_complete_variants_without_provider_is_empty():
+    """__complete variants without provider does not error."""
+    out, err = _run_cli(["__complete", "variants"])
+    assert out.strip() == ""
+    assert err.strip() == ""
+
+
 def test_account_list_empty(tmp_home):
     """account list with no accounts."""
     from unittest.mock import patch as up

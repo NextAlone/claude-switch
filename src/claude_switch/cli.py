@@ -164,9 +164,9 @@ def _print_fish_completion() -> None:
     print("complete -c claude-switch -n '__fish_seen_subcommand_from provider; and __fish_seen_subcommand_from add' -l base-url")
     print("complete -c claude-switch -n '__fish_seen_subcommand_from provider; and __fish_seen_subcommand_from add' -l model")
     print("complete -c claude-switch -n '__fish_seen_subcommand_from provider; and __fish_seen_subcommand_from add' -l auth-token-var")
-    print("complete -c claude-switch -n '__fish_seen_subcommand_from provider; and __fish_seen_subcommand_from remove' -a '(claude-switch __complete providers)'")
-    print("complete -c claude-switch -n '__fish_seen_subcommand_from provider; and __fish_seen_subcommand_from use' -a '(claude-switch __complete providers)'")
-    print("complete -c claude-switch -n '__fish_seen_subcommand_from provider; and __fish_seen_subcommand_from use' -a '(claude-switch __complete variants (commandline -opc)[4])'")
+    print("complete -c claude-switch -n '__fish_seen_subcommand_from provider; and __fish_seen_subcommand_from remove; and test (count (commandline -opc)) -eq 3' -a '(claude-switch __complete providers)'")
+    print("complete -c claude-switch -n '__fish_seen_subcommand_from provider; and __fish_seen_subcommand_from use; and test (count (commandline -opc)) -eq 3' -a '(claude-switch __complete providers)'")
+    print("complete -c claude-switch -n '__fish_seen_subcommand_from provider; and __fish_seen_subcommand_from use; and test (count (commandline -opc)) -eq 4' -a '(claude-switch __complete variants (commandline -opc)[4])'")
     print("complete -c claude-switch -n '__fish_seen_subcommand_from provider; and __fish_seen_subcommand_from use' -l mode -a 'eval global project'")
     print("complete -c claude-switch -n '__fish_seen_argument -l mode' -a 'eval global project'")
     print("complete -c claude-switch -n '__fish_seen_subcommand_from account; and not __fish_seen_subcommand_from list add switch remove' -a 'list add switch remove'")
@@ -251,8 +251,9 @@ def _print_bash_completion() -> None:
 def cmd_complete(kind: str, provider_name: str | None = None) -> None:
     if kind == "providers":
         print("\n".join(_provider_names()))
-    elif kind == "variants" and provider_name:
-        print("\n".join(_provider_variant_names(provider_name)))
+    elif kind == "variants":
+        if provider_name:
+            print("\n".join(_provider_variant_names(provider_name)))
     elif kind == "accounts":
         print("\n".join(_account_names()))
     else:
