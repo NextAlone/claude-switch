@@ -7,15 +7,19 @@ from datetime import datetime
 from pathlib import Path
 
 
-USER_SETTINGS = Path.home() / ".claude" / "settings.json"
+def _user_settings_path() -> Path:
+    return Path.home() / ".claude" / "settings.json"
+
+
 PROJECT_SETTINGS = Path(".claude/settings.local.json")
 
 
 def read_user_settings() -> dict:
     """Read ~/.claude/settings.json, return empty dict if absent."""
-    if USER_SETTINGS.exists():
+    path = _user_settings_path()
+    if path.exists():
         try:
-            return json.loads(USER_SETTINGS.read_text(encoding="utf-8"))
+            return json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
             return {}
     return {}
@@ -23,14 +27,15 @@ def read_user_settings() -> dict:
 
 def write_user_settings(data: dict) -> None:
     """Write ~/.claude/settings.json with backup before first write."""
-    USER_SETTINGS.parent.mkdir(parents=True, exist_ok=True)
-    if USER_SETTINGS.exists():
+    path = _user_settings_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        backup = USER_SETTINGS.with_suffix(f".json.bak.{timestamp}")
-        shutil.copy2(USER_SETTINGS, backup)
-    USER_SETTINGS.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n",
+        backup = path.with_suffix(f".json.bak.{timestamp}")
+        shutil.copy2(path, backup)
+    path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n",
                               encoding="utf-8")
-    USER_SETTINGS.chmod(0o600)
+    path.chmod(0o600)
 
 
 def merge_into_user_settings(env_vars: dict[str, str], source: str | None = None) -> Path:
@@ -38,12 +43,13 @@ def merge_into_user_settings(env_vars: dict[str, str], source: str | None = None
 
     Returns the path written.
     """
+    path = _user_settings_path()
     data = read_user_settings()
     data.setdefault("env", {}).update(env_vars)
     if source:
         data["_claude_switch_provider"] = source
     write_user_settings(data)
-    return USER_SETTINGS
+    return path
 
 
 def write_project_settings(env_vars: dict[str, str], source: str | None = None) -> Path:

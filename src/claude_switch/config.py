@@ -6,7 +6,7 @@ import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from claude_switch.exceptions import ConfigError
+from claude_switch.exceptions import ConfigError, ProviderNotFoundError
 
 
 @dataclass
