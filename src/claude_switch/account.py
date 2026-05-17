@@ -13,28 +13,33 @@ from claude_switch.credential import (
 from claude_switch.printer import accent, bolded, dimmed, error, warning
 
 ACCOUNTS_DIR = Path.home() / ".config" / "claude-switch" / "accounts"
-SEQUENCE_FILE = ACCOUNTS_DIR / "sequence.json"
+
+
+def _sequence_file() -> Path:
+    return ACCOUNTS_DIR / "sequence.json"
 
 
 def _init() -> None:
     ACCOUNTS_DIR.mkdir(parents=True, exist_ok=True)
-    if not SEQUENCE_FILE.exists():
-        SEQUENCE_FILE.write_text(
+    sequence_file = _sequence_file()
+    if not sequence_file.exists():
+        sequence_file.write_text(
             json.dumps({"active": None, "accounts": {}, "order": []}, indent=2),
             encoding="utf-8",
         )
-        SEQUENCE_FILE.chmod(0o600)
+        sequence_file.chmod(0o600)
 
 
 def _read_seq() -> dict:
     _init()
-    return json.loads(SEQUENCE_FILE.read_text(encoding="utf-8"))
+    return json.loads(_sequence_file().read_text(encoding="utf-8"))
 
 
 def _write_seq(data: dict) -> None:
     data["_updated"] = datetime.now(timezone.utc).isoformat()
-    SEQUENCE_FILE.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
-    SEQUENCE_FILE.chmod(0o600)
+    sequence_file = _sequence_file()
+    sequence_file.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    sequence_file.chmod(0o600)
 
 
 def _next_slot(data: dict) -> int:

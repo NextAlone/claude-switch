@@ -70,6 +70,34 @@ def test_provider_use_unknown(monkeypatch):
     assert "not found" in err
 
 
+def test_completion_fish():
+    """completion fish emits fish completion script."""
+    out, err = _run_cli(["completion", "fish"])
+    assert "complete -c claude-switch" in out
+    assert "provider account status config completion" in out
+    assert "deepseek" in out
+    assert "--mode" in out or "-l mode" in out
+    assert "china" in out
+
+
+def test_completion_zsh():
+    """completion zsh emits zsh completion script."""
+    out, err = _run_cli(["completion", "zsh"])
+    assert "#compdef claude-switch" in out
+    assert "_claude_switch()" in out
+    assert "--mode[Switching mode]" in out
+    assert "china" in out
+
+
+def test_completion_bash():
+    """completion bash emits bash completion script."""
+    out, err = _run_cli(["completion", "bash"])
+    assert "complete -F _claude_switch claude-switch" in out
+    assert "_claude_switch()" in out
+    assert "--mode) COMPREPLY" in out
+    assert "china" in out
+
+
 def test_account_list_empty(tmp_home):
     """account list with no accounts."""
     from unittest.mock import patch as up
