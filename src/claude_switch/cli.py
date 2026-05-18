@@ -29,6 +29,8 @@ def cmd_provider_list() -> None:
     providers = load_providers()
     print("Available providers:")
     print()
+    if not providers:
+        print(dimmed("  (none)"))
     for p in providers:
         aliases_str = f" ({', '.join(p.aliases)})" if p.aliases else ""
         variants_str = f" [variants: {', '.join(p.variants.keys())}]" if p.variants else ""
@@ -111,12 +113,8 @@ def cmd_provider_remove(name: str) -> None:
     print(f"{accent('Removed')} provider '{name}' from {USER_PROVIDERS_PATH}")
 
 
-def _provider_names(include_builtin: bool = False) -> list[str]:
+def _provider_names() -> list[str]:
     providers = load_providers()
-    if not include_builtin and USER_PROVIDERS_PATH.exists():
-        import tomllib
-        data = tomllib.loads(USER_PROVIDERS_PATH.read_text(encoding="utf-8"))
-        return sorted({p.get("name", "") for p in data.get("provider", []) if p.get("name")})
     return sorted({p.name for p in providers})
 
 
@@ -418,7 +416,7 @@ def main() -> None:
                     content = USER_PROVIDERS_PATH.read_text(encoding="utf-8")
                     print(content)
                 else:
-                    print(dimmed("# No user config. Using built-in presets only."))
+                    print(dimmed("# No user config. No providers defined yet."))
             else:
                 p_cfg.print_help()
     except ClaudeSwitchError as e:
