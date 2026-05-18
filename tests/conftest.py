@@ -28,7 +28,7 @@ def tmp_claude_config(tmp_home):
 
 @pytest.fixture
 def tmp_providers_toml(tmp_home):
-    """Create a temporary providers.toml with a test provider."""
+    """Create a temporary providers.toml with test providers."""
     cs_dir = tmp_home / ".config" / "claude-switch"
     cs_dir.mkdir(parents=True)
     toml_path = cs_dir / "providers.toml"
@@ -42,6 +42,19 @@ description = "Test provider"
 ANTHROPIC_BASE_URL = "https://test.example.com/api"
 ANTHROPIC_AUTH_TOKEN = "${TEST_KEY}"
 ANTHROPIC_MODEL = "test-model"
+
+[[provider]]
+name = "foxcode"
+aliases = ["fc"]
+description = "FoxCode provider"
+
+[provider.env]
+ANTHROPIC_BASE_URL = "https://api.foxcode.example.com/anthropic"
+ANTHROPIC_AUTH_TOKEN = "${FOXCODE_API_KEY}"
+ANTHROPIC_MODEL = "foxcode-base"
+
+[provider.variants.codex.env]
+ANTHROPIC_MODEL = "foxcode-codex"
 """, encoding="utf-8")
     return toml_path
 

@@ -7,6 +7,14 @@ from unittest.mock import patch
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def use_tmp_user_providers(tmp_providers_toml, monkeypatch):
+    """Force CLI tests to use temporary user providers.toml."""
+    monkeypatch.setattr("claude_switch.config.USER_PROVIDERS_PATH", tmp_providers_toml)
+    monkeypatch.setattr("claude_switch.cli.USER_PROVIDERS_PATH", tmp_providers_toml)
+    return tmp_providers_toml
+
+
 def _run_cli(args: list[str]):
     """Run the CLI with given args and return stdout/stderr captures."""
     from claude_switch.cli import main
@@ -37,17 +45,17 @@ def test_help():
 def test_provider_list():
     """provider list outputs known providers."""
     out, err = _run_cli(["provider", "list"])
-    assert "deepseek" in out
-    assert "claude" in out
+    assert "testprov" in out
+    assert "foxcode" in out
 
 
 def test_provider_use_eval(monkeypatch):
     """provider use in eval mode outputs export statements."""
-    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+    monkeypatch.setenv("TEST_KEY", "sk-test")
     monkeypatch.setattr(sys.stdout, "isatty", lambda: False)
-    out, err = _run_cli(["provider", "use", "deepseek"])
+    out, err = _run_cli(["provider", "use", "testprov"])
     assert "export ANTHROPIC_BASE_URL=" in out
-    assert "api.deepseek.com" in out
+    assert "test.example.com" in out
 
 
 def test_provider_use_global(tmp_home):
@@ -56,11 +64,11 @@ def test_provider_use_global(tmp_home):
     from unittest.mock import patch
 
     with patch("claude_switch.cli._detect_mode", return_value="global"):
-        cmd_provider_use("claude", None, None)
+        cmd_provider_use("testprov", None, None)
     settings_path = tmp_home / ".claude" / "settings.json"
     assert settings_path.exists()
     data = json.loads(settings_path.read_text())
-    assert data["env"]["ANTHROPIC_BASE_URL"] == "https://api.anthropic.com/"
+    assert data["env"]["ANTHROPIC_BASE_URL"] == "https://test.example.com/api"
 
 
 def test_provider_use_unknown(monkeypatch):
@@ -103,7 +111,7 @@ def test_completion_bash():
 def test_internal_complete_user_providers():
     """__complete providers returns user providers dynamically."""
     out, err = _run_cli(["__complete", "providers"])
-    assert "deepseek" in out
+    assert "testprov" in out
     assert "foxcode" in out
 
 

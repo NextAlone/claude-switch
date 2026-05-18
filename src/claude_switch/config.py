@@ -1,7 +1,6 @@
-"""Load and merge provider configurations from built-in presets and user TOML."""
+"""Load provider configurations from user TOML."""
 from __future__ import annotations
 
-import importlib.resources
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -67,33 +66,9 @@ def _dict_to_provider(raw: dict) -> Provider:
 
 
 def load_providers() -> list[Provider]:
-    """Load all providers: built-in presets merged with user overrides.
-
-    Returns a list of Provider objects. User-defined providers with the
-    same name as a built-in override it. User-defined providers with new
-    names are appended.
-    """
-    # Load built-in presets from package data
-    try:
-        presets_bytes = importlib.resources.files("claude_switch").joinpath("builtin_presets.toml").read_bytes()
-    except Exception as e:
-        raise ConfigError(f"Failed to load built-in presets: {e}") from e
-
-    builtin_raw = tomllib.loads(presets_bytes.decode("utf-8")).get("provider", [])
-
-    # Build a dict keyed by provider name
-    provider_map: dict[str, Provider] = {}
-    for raw in builtin_raw:
-        p = _dict_to_provider(raw)
-        provider_map[p.name] = p
-
-    # Load user overrides
+    """Load all providers from user config."""
     user_raw = _load_toml_providers(USER_PROVIDERS_PATH)
-    for raw in user_raw:
-        p = _dict_to_provider(raw)
-        provider_map[p.name] = p  # override or append
-
-    return list(provider_map.values())
+    return [_dict_to_provider(raw) for raw in user_raw]
 
 
 def get_all_env_keys(providers: list[Provider]) -> set[str]:
