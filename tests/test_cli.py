@@ -54,8 +54,9 @@ def test_provider_use_eval(monkeypatch):
     monkeypatch.setenv("TEST_KEY", "sk-test")
     monkeypatch.setattr(sys.stdout, "isatty", lambda: False)
     out, err = _run_cli(["provider", "use", "testprov"])
-    assert "export ANTHROPIC_BASE_URL=" in out
-    assert "test.example.com" in out
+    lines = out.splitlines()
+    assert any(line.startswith("export ANTHROPIC_BASE_URL=") for line in lines)
+    assert "export ANTHROPIC_BASE_URL='https://test.example.com/api'" in lines
 
 
 def test_provider_use_global(tmp_home):

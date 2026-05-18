@@ -23,7 +23,7 @@ def test_resolve_by_name(tmp_providers_toml, monkeypatch):
     providers = load_providers()
     p = resolve_provider("testprov", providers)
     assert p.name == "testprov"
-    assert "test.example.com" in p.env.get("ANTHROPIC_BASE_URL", "")
+    assert p.env["ANTHROPIC_BASE_URL"] == "https://test.example.com/api"
 
 
 def test_resolve_by_alias(tmp_providers_toml, monkeypatch):
